@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- See Relax specification: Ghidra/Framework/SoftwareModeling/data/languages/compiler_spec.rxg -->
+
+<compiler_spec>
+  <data_organization>
+	<pointer_size value="2" />
+  </data_organization>
+  <global>
+    <range space="ram"/>
+    <range space="io"/>
+    <range space="hwstack"/>
+  </global>
+  <stackpointer register="sp" space="hwstack" growth="positive"/>
+  <returnaddress>
+    <varnode space="hwstack" offset="-2" size="2"/>
+  </returnaddress>
+  <default_proto>
+    <prototype name="default" strategy="register" extrapop="-2" stackshift="-2">
+      <input>
+        <pentry minsize="2" maxsize="2">
+          <register name="r0"/>
+        </pentry>
+        <pentry minsize="2" maxsize="2">
+          <register name="r1"/>
+        </pentry>
+        <pentry minsize="2" maxsize="2">
+          <register name="r2"/>
+        </pentry>
+        <pentry minsize="2" maxsize="2">
+          <register name="r3"/>
+        </pentry>
+      </input>
+      <output>
+        <pentry minsize="2" maxsize="2">
+          <register name="r0"/>
+        </pentry>
+      </output>
+      <unaffected>
+      	<register name="sp"/>
+        <register name="r8"/>
+        <register name="r9"/>
+        <register name="r10"/>
+        <register name="r11"/>
+        <register name="r12"/>
+        <register name="r13"/>
+        <register name="r14"/>
+      </unaffected>
+    </prototype>
+  </default_proto>
+</compiler_spec>

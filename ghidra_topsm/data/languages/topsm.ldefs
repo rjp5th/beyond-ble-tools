@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- See Relax specification: Ghidra/Framework/SoftwareModeling/data/languages/language_definitions.rxg -->
+
+<language_definitions>
+<!-- Uncomment the following to make the language available in Ghidra -->
+
+   <language processor="TopSM"
+            endian="little"
+            size="16"
+            variant="default"
+            version="1.0"
+            slafile="topsm.sla"
+            processorspec="topsm.pspec"
+            id="topsm:LE:16:default">
+    <description>TI SimpleLink TopSM Machine</description>
+    <compiler name="default" spec="topsm.cspec" id="default"/>
+  </language> 
+
+</language_definitions>

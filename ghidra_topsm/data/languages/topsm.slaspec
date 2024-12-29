@@ -1,0 +1,28 @@
+# sleigh specification file for Skeleton Processor
+#   >> see docs/languages/sleigh.htm or sleigh.pdf for Sleigh syntax
+# Other language modules (see Ghidra/Processors) may provide better examples
+# when creating a new language module.
+
+# SPDX-FileCopyrightText: 2024 Robert Pafford
+# SPDX-License-Identifier: MIT
+
+define endian=little;
+define alignment=2;
+
+define space ram      type=ram_space       size=2  default wordsize=2;
+
+define space io       type=ram_space       size=2  wordsize=2;
+define space hwstack  type=ram_space       size=2;
+define space register type=register_space size=2;
+
+define register offset=0x00 size=2 [ r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15 ];
+define register offset=0x20 size=2 [ pc sp flag ]; # Inaccessable Registers
+
+# Status Flags
+@define Z "flag[0,1]" # Z: Zero result
+@define N "flag[1,1]" # N: Negative result (twos complement)
+
+define pcodeop WaitForEvent;
+
+# Include contents of topsm.sinc file
+@include "topsm.sinc"

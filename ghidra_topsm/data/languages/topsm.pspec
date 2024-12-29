@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- See Relax specification: Ghidra/Framework/SoftwareModeling/data/languages/processor_spec.rxg -->
+
+<processor_spec>
+  <programcounter register="PC"/>
+  <default_symbols>
+    <symbol name="RST" address="ram:0000" entry="true"/>
+  </default_symbols>
+  <volatile outputop="write_volatile" inputop="read_volatile">
+    <range space="io" first="0x00" last="0xFF"/>
+  </volatile>
+  <default_memory_blocks>
+    <memory_block name="io" start_address="io:0" length="0x200" initialized="false"/>
+  </default_memory_blocks>
+</processor_spec>

@@ -1,0 +1,170 @@
+# sleigh include file for Skeleton language instructions
+# SPDX-FileCopyrightText: 2024 Robert Pafford
+# SPDX-License-Identifier: MIT
+
+define token inst (16)
+    op2		= (14, 15)
+    op4  	= (12, 15)
+    op5     = (11, 15)
+    op6		= (10, 15)
+    op7		= (9, 15)
+    op8		= (8, 15)
+
+	ra		= (4, 7)
+	rb		= (0, 3)
+
+	imm4l	= (0, 3)
+	imm4	= (4, 7)
+	imm5    = (4, 8)
+	imm7	= (4, 10)
+	imm8	= (0, 7)
+	imm8h	= (4, 11)
+    imm10	= (0, 9)
+    imm10h	= (4, 13)
+;
+
+attach variables [ ra rb ] [ r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15 ];
+
+imm7_rptr: imm7 is imm7 { export *[ram]:2 imm7; }
+imm10_rptr: imm10 is imm10 { export *[ram]:2 imm10; }
+imm8_ioptr: imm8 is imm8 { export *[io]:2 imm8; }
+imm8h_ioptr: imm8h is imm8h { export *[io]:2 imm8h; }
+
+
+macro setNZFlags(result) {
+    $(Z) = (result == 0);
+    $(N) = (result s< 0);
+}
+
+################################################################
+
+#### Opcode 0x0X
+:or ra, rb is op8=0x00 & ra & rb { rb = rb | ra; setNZFlags(rb); }
+:nop is op8=0x00 & ra=0x00 & rb=0x00 {  setNZFlags(r0); }  # Special case: or r0, r0 is nop
+:or imm4, rb is op8=0x02 & imm4 & rb { rb = rb | imm4; setNZFlags(rb); }
+
+:and ra, rb is op8=0x04 & ra & rb { rb = rb & ra; setNZFlags(rb); }
+:and imm4, rb is op8=0x06 & imm4 & rb { rb = rb & imm4; setNZFlags(rb); }
+
+:xor ra, rb is op8=0x08 & ra & rb { rb = rb ^ ra; setNZFlags(rb); }
+:xor imm4, rb is op8=0x0A & imm4 & rb { rb = rb ^ imm4; setNZFlags(rb); }
+
+#### Opcode 0x1X
+
+:mov ra, rb is op8=0x10 & ra & rb { rb = ra; }
+:mov pc, rb is op8=0x11 & rb & pc { rb = inst_start; }
+:mov imm5, rb is op7=0x9 & imm5 & rb { rb = imm5; }
+
+
+:add ra, rb is op8=0x14 & ra & rb { rb = ra + rb; setNZFlags(rb); }
+:add imm4, rb is op8=0x16 & imm4 & rb { rb = rb + imm4; setNZFlags(rb); }
+:sub ra, rb is op8=0x18 & ra & rb { rb = rb - ra; setNZFlags(rb); }
+:sub imm4, rb is op8=0x1A & imm4 & rb { rb = rb - imm4; setNZFlags(rb); }
+
+:cmp ra, rb is op8=0x1C & ra & rb {
+	local tmp:2 = rb - ra;
+	setNZFlags(tmp);
+}
+:cmp imm4, rb is op8=0x1E & imm4 & rb {
+	local tmp:2 = rb - imm4;
+	setNZFlags(tmp);
+}
+
+#### Opcode 0x2X
+:btst imm4, rb is op8=0x22 & imm4 & rb {
+	local tmp:2 = rb & (1 << imm4);
+	setNZFlags(tmp);
+}
+
+:sad ra, rb is op8=0x24 & ra & rb { rb = rb + (1 << ra); setNZFlags(rb); }
+:sad imm4, rb is op8=0x26 & imm4 & rb { rb = rb + (1 << imm4); setNZFlags(rb); }
+
+:bclr imm4, rb is op8=0x2A & imm4 & rb {
+	local mask:2 = (1 << imm4);
+	rb = rb & (~mask);
+	setNZFlags(rb);
+}
+
+
+#### Opcode 0x3X
+:sl0 ra, rb is op8=0x30 & ra & rb { rb = rb << ra; setNZFlags(rb); }
+:sl0 imm4, rb is op8=0x31 & imm4 & rb { rb = rb << imm4; setNZFlags(rb); }
+:slx ra, rb is op8=0x34 & ra & rb { rb = rb << ra; setNZFlags(rb); }
+:slx imm4, rb is op8=0x35 & imm4 & rb { rb = rb << imm4; setNZFlags(rb); }
+:sr0 ra, rb is op8=0x38 & ra & rb { rb = rb >> ra; setNZFlags(rb); }
+:sr0 imm4, rb is op8=0x39 & imm4 & rb { rb = rb >> imm4; setNZFlags(rb); }
+:srx ra, rb is op8=0x3c & ra & rb { rb = rb s>> ra; setNZFlags(rb); }
+:srx imm4, rb is op8=0x3d & imm4 & rb { rb = rb s>> imm4; setNZFlags(rb); }
+
+
+#### Opcode 0x4X
+:beq imm10_rptr is op6=0x10 & imm10_rptr { if ($(Z)) goto imm10_rptr; }
+:bne imm10_rptr is op6=0x11 & imm10_rptr { if (!$(Z)) goto imm10_rptr; }
+:bmi imm10_rptr is op6=0x12 & imm10_rptr { if (!$(N)) goto imm10_rptr; }
+:bpl imm10_rptr is op6=0x13 & imm10_rptr { if ($(N)) goto imm10_rptr; }
+
+#### Opcode 0x6X
+
+:jmp imm10_rptr is op6=0x18 & imm10_rptr { goto imm10_rptr; }
+:jsr imm10_rptr is op6=0x19 & imm10_rptr {
+	# Save the next instruction in the hardware stack
+	local retaddr:2 = inst_next;
+	*[hwstack]:2 sp = retaddr;
+	sp = sp + 2;
+
+	# Call the subroutine
+	call imm10_rptr;
+}
+
+:loop imm10_rptr is op6=0x1A & imm10_rptr {
+	# If we still have 1 left, jump to requested loop dest
+	if (r0 == 0) goto <endloop>;
+
+	# Do subtraction
+	r0 = r0 - 1;
+	goto imm10_rptr;
+
+  <endloop>
+}
+
+:jmp (rb) is op8=0x6C & ra=0x00 & rb { goto [rb]; }
+:output rb, (ra) is op8=0x6E & ra & rb { *[io]:2 ra = rb; }
+:lmd (ra), rb is op8=0x6F & ra & rb { rb = *[ram]:2 ra; }
+
+#### Opcode 0x7X
+
+:rts is op8=0x70 & imm8=0x00 {
+	# POp address off stack
+	sp = sp - 2;
+	local retaddr:2 = *[hwstack]:2 sp;
+	return [retaddr];
+}
+
+:wait is op8 = 0x71 & imm8 = 0x00 { WaitForEvent(); }
+:outclr imm8_ioptr is op8=0x72 & imm8_ioptr { imm8_ioptr = 0; }
+:outset imm8_ioptr is op8=0x73 & imm8_ioptr { imm8_ioptr = 0xFFFF; }  # TODO: Verify operation
+
+:lmd imm7_rptr, rb is op5=0xF & imm7_rptr & rb { rb = imm7_rptr; }
+
+
+#### Higher Opcodes
+
+:input imm8h_ioptr, rb is op4=0x8 & imm8h_ioptr & rb { rb = imm8h_ioptr; }
+:output rb, imm8h_ioptr is op4=0x9 & imm8h_ioptr & rb { imm8h_ioptr = rb; }
+
+:outbclr imm4l, imm8h_ioptr is op4=0xA & imm4l & imm8h_ioptr {
+	local val:2 = imm8h_ioptr;
+	local mask:2 = (1 << imm4l);
+	val = val & (~mask);
+	imm8h_ioptr = val;
+}
+
+:outbset imm4l, imm8h_ioptr is op4=0xB & imm4l & imm8h_ioptr {
+	local val:2 = imm8h_ioptr;
+	val = val | (1 << imm4l);
+	imm8h_ioptr = val;
+}
+
+:lli imm10h, rb is op2 = 0x3 & imm10h & rb { rb = imm10h; }
+
+
